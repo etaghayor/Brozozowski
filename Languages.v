@@ -101,56 +101,126 @@ Proof. intros x x' Hx w w' <-. now apply star_eq. Qed.
 
 Lemma cat_void_l L : ∅ · L == ∅.
 Proof.
-Admitted.
+    firstorder.
+Qed.
 
 Lemma cat_void_r L :  L · ∅ == ∅.
 Proof.
-Admitted.
+  firstorder.
+Qed.
 
 Lemma cat_eps_l L : ε · L == L.
 Proof.
-Admitted.
+  intro. split.
+    - intro h. firstorder. rewrite H0 in H. simpl in H. subst. assumption.
+    - intro h. unfold cat. exists [],x. firstorder. 
+Qed.
 
 Lemma cat_eps_r L : L · ε == L.
 Proof.
-Admitted.
+  split.
+    - intros h. firstorder. unfold epsilon in H1. 
+      subst. rewrite app_nil_r. assumption.
+    - intro h. unfold cat. exists x,[]. firstorder. symmetry. apply app_nil_r.
+Qed.
 
 Lemma cat_assoc L1 L2 L3 : (L1 · L2) · L3 == L1 · (L2 · L3).
 Proof.
+  split; intro h; firstorder.
+    - exists x2, (x3++x1). subst. firstorder. apply app_assoc_reverse.
+    - subst. exists (x0++x2), x3 . firstorder. apply app_assoc.
+Qed.
+
+
+Lemma power_zero x L: (L ^ 0) x -> ε x.
+Proof.
+  intro h. firstorder.
+Qed.
+
+Lemma power_app n m y z L :
+ (L^n) y -> (L^m) z -> (L^(n+m)) (y++z).
+Proof.
+    intros. induction n.
+    - simpl. apply power_zero in H. unfold epsilon in H. subst.
+      rewrite app_nil_l. assumption.
+    - firstorder. subst. simpl. unfold cat. 
+      exists x, (x0++z). firstorder.
+      + apply app_assoc_reverse.
+      + induction m.
+        * apply power_zero in H0. rewrite H0. rewrite app_nil_r.
+          rewrite PeanoNat.Nat.add_0_r. assumption.
+        * firstorder.  rewrite PeanoNat.Nat.add_succ_r. simpl.
+          unfold cat. subst. exists (x0++x1) ,x2. firstorder. 
+          -- apply app_assoc.
+          -- 
 Admitted.
+
 
 Lemma star_eqn L : L★ == ε ∪ L · L ★.
 Proof.
-Admitted.
+  split;intro h; firstorder.
+    - induction x0; firstorder.
+    - unfold epsilon in H. subst. exists 0. firstorder.
+    - unfold star. exists (1+x2). subst. apply power_app.
+      + simpl. apply cat_eps_r. assumption.
+      + assumption.
+Qed.
 
 Lemma star_void : ∅ ★ == ε.
 Proof.
-Admitted.
+  split; intro h; firstorder.
+    - unfold epsilon. induction x0; firstorder.
+    - unfold star. exists 0. firstorder.
+Qed.
 
 Lemma power_eps n : ε ^ n == ε.
 Proof.
-Admitted.
+  split; intro h; firstorder.
+    - induction n; firstorder. apply IHn. 
+      subst. unfold epsilon in H0. subst. simpl. assumption.
+    - induction n.
+      + firstorder.
+      + simpl. unfold cat. exists [],[]; firstorder. 
+      unfold epsilon in h. subst. assumption.
+Qed.
 
 Lemma star_eps : ε ★ == ε.
 Proof.
-Admitted.
+  split; intros; firstorder.
+    - induction x0; firstorder.
+      apply IHx0. unfold epsilon in H0. subst. rewrite app_nil_l. assumption.
+    - unfold star. exists 0. firstorder.
+Qed.
 
 Lemma power_cat n m L : L^(n+m) == (L^n) · (L^m).
 Proof.
+  split; intros; firstorder.
+    - induction n. 
+      + unfold cat. exists [],x. firstorder.
+      + simpl. apply cat_assoc.
+        unfold cat. exists x,[]. firstorder.
+        * symmetry. apply app_nil_r.
+        * subst. firstorder.  
 Admitted.
 
-Lemma power_app n m y z L :
+Lemma power_app1 n m y z L :
  (L^n) y -> (L^m) z -> (L^(n+m)) (y++z).
 Proof.
 Admitted.
 
 Lemma star_star L : (L★)★ == L★.
 Proof.
+  split; intros; firstorder.
+    - unfold star in *. exists (x0). admit.
+    - unfold star. exists 1. apply cat_eps_r. exists x0. assumption. 
 Admitted.
 
 Lemma cat_star L : (L★)·(L★) == L★.
 Proof.
-Admitted.
+  split; intros; firstorder.
+    - exists (x3+x2). subst. apply power_app1; firstorder.
+    - unfold cat. exists [],x; firstorder. exists 0. firstorder.
+Qed.
 
 (** ** Derivative of a language : definition **)
 
@@ -164,24 +234,50 @@ Proof. intros L L' HL w w' <-. unfold derivative. intro. apply HL. Qed.
 Lemma derivative_app L w w' :
   derivative L (w++w') == derivative (derivative L w) w'.
 Proof.
-Admitted.
+  split; intros; firstorder.
+    - unfold derivative in *. rewrite app_assoc. assumption.
+    - unfold derivative in *. rewrite app_assoc_reverse. assumption.
+Qed.
 
 Lemma derivative_letter_eps a : derivative a [a] == ε.
-Proof.
-Admitted.
+Proof. 
+  unfold derivative. split. 
+    - intro h. unfold epsilon. red in h. 
+    apply app_eq_unit in h. destruct h; destruct H.
+      + subst. assumption.
+      + assumption.
+    - intros. unfold epsilon in H. subst. apply app_nil_r.
+Qed.
 
 Lemma derivative_letter_void a1 a2 : a1 <> a2 -> derivative a1 [a2] == ∅.
 Proof.
-Admitted.
+  intro h. split; intros; firstorder.
+    - unfold void. induction x.
+      + destruct h. unfold derivative in H. red in H. apply app_eq_unit in H.
+        firstorder. 
+        * discriminate.
+        * (rewrite <- app_nil_l in H).
+         symmetry in H. (rewrite <- app_nil_l in H) .
+         apply app_inj_tail in H. destruct H. assumption.  
+      + apply IHx. unfold derivative in *. discriminate.
+Qed.
 
 Lemma derivative_cat_null L L' a : L [] ->
   derivative (L · L') [a] == (derivative L [a] · L') ∪ derivative L' [a].
 Proof.
+  split; intros; firstorder.
+    - unfold union,derivative, cat. right. rewrite H0.
+      destruct x0.
+      + simpl in *. assumption.
+      + simpl in *. rewrite <- H0. 
 Admitted.
 
 Lemma derivative_cat_nonnull L L' a : ~L [] ->
   derivative (L · L') [a] == derivative L [a] · L'.
 Proof.
+   intro h. split; intros; firstorder.
+    - unfold cat. unfold derivative. exists x0,x1. split.
+      + rewrite <- H. 
 Admitted.
 
 Lemma derivative_star L a :
