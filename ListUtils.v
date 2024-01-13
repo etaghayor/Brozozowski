@@ -15,12 +15,29 @@ Definition product {A B} (l : list A) (l' : list B) : list (A * B) :=
 Lemma product_ok {A B} (l : list A) (l' : list B) x y :
   List.In (x, y) (product l l') <-> List.In x l /\ List.In y l'.
 Proof.
-Admitted.
+  split; intros.
+    - split.
+      + induction l; auto. 
+      simpl in *. apply in_app_iff in H. destruct H.
+        * left. apply in_map_iff in H. destruct H. destruct H. 
+        apply pair_equal_spec in H. destruct H. assumption.
+        * right. apply IHl. assumption.
+      + induction l; firstorder. simpl in *.
+        apply in_app_iff in H. destruct H.
+        * apply in_map_iff in H. destruct H. destruct H. 
+          apply pair_equal_spec in H. destruct H. subst. assumption.
+        * apply IHl. apply H.
+    - destruct H. apply in_flat_map. exists x. firstorder.
+     apply in_map_iff. eauto.
+Qed.
 
 Lemma product_length {A B} (l:list A)(l':list B) :
   length (product l l') = length l * length l'.
 Proof.
-Admitted.
+  induction l.
+    - simpl. reflexivity.
+    - simpl in *. rewrite <- IHl. rewrite app_length. f_equal. apply map_length.
+Qed.
 
 (** Equivalence of lists *)
 
@@ -43,21 +60,45 @@ Qed.
 
 Lemma eqlist_nil {A} (l : list A) : eqlist l [] -> l = [].
 Proof.
-Admitted.
+  intros. unfold eqlist in H. induction l.
+    - reflexivity.
+    -  destruct H with a. firstorder.
+Qed.
 
 Lemma eqlist_comm {A} (l l' : list A) : eqlist l l' -> eqlist l' l.
 Proof.
-Admitted.
+  intros. induction l.
+    - firstorder.
+    - unfold eqlist in *. intros. split; apply H.
+Qed.
 
 Lemma eqlist_undup {A} (a:A) l l' :
  eqlist (a::l) l' -> In a l -> eqlist l l'.
 Proof.
-Admitted.
+  intros. unfold eqlist in *. split; intros.
+    - apply H. firstorder.
+    - apply H in H1. firstorder. subst. assumption.
+Qed.
 
 Lemma eqlist_uncons {A} (a:A) l l' :
  eqlist (a::l) (a::l') -> ~In a l -> ~In a l' -> eqlist l l'.
 Proof.
-Admitted.
+  intros. unfold eqlist in *. split; intros.
+    - destruct H with n. simpl in *. destruct H4.
+      + apply H3. right. assumption.
+      + subst. firstorder.
+      + destruct H3.
+        * right. assumption.
+        * subst. firstorder.
+        * assumption.
+    - destruct H with n. simpl in *. destruct H4.
+      + right. assumption.
+      + subst. firstorder.
+      + destruct H3.
+        * right. assumption.
+        * subst. firstorder.
+        * assumption.
+Qed.
 
 (** [Incl] : inclusion of lists.
 
@@ -73,12 +114,17 @@ Global Hint Constructors Incl : core.
 
 Lemma Incl_nil {A} (l:list A) : Incl [] l.
 Proof.
-Admitted.
+  induction l; firstorder.
+Qed.
 Global Hint Resolve Incl_nil : core.
 
 Lemma Incl_len {A} (l l' : list A) : Incl l l' -> length l <= length l'.
 Proof.
-Admitted.
+  intros. induction H.
+    - auto.
+    - simpl. rewrite IHIncl. firstorder.
+    - simpl. apply le_n_S. assumption.
+Qed.
 
 Global Instance Incl_PreOrder {A} : PreOrder (@Incl A).
 Proof.
@@ -108,7 +154,12 @@ Qed.
 
 Lemma Incl_singleton {A} (a:A) l : In a l -> Incl [a] l.
 Proof.
-Admitted.
+  intros. induction l.
+    - firstorder.
+    - simpl in *. destruct H.
+      + subst. firstorder.
+      + apply IHl in H. firstorder.
+Qed.
 
 (** [sublists] generates all lists included in a first one *)
 
@@ -123,12 +174,25 @@ Fixpoint sublists {A} (l : list A) :=
 Lemma sublists_spec {A} (l l' :list A) :
  In l' (sublists l) <-> Incl l' l.
 Proof.
+  split; intros.
+    - induction l.
+      + firstorder. subst. firstorder.
+      + simpl in *. apply in_app_or in H. destruct H.
+        * apply IHl in H. firstorder.
+        * apply in_map_iff in H. destruct H. destruct H. subst.
+          constructor. apply IHl. admit.
+    - generalize l. induction l.  
+      + intros. simpl.
 Admitted.
 
 Lemma sublists_length {A} (l:list A) :
  length (sublists l) = 2^length l.
 Proof.
-Admitted.
+  induction l.
+    - simpl. reflexivity.
+    - simpl in *. rewrite app_length. rewrite IHl.
+      f_equal. rewrite <- IHl. rewrite map_length. firstorder.
+Qed.
 
 (** [Subset] : another inclusion predicate, but this time we ignore
    the positions and the repetitions. It is enough for all elements

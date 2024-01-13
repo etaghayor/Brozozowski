@@ -137,33 +137,12 @@ Proof.
   intro h. firstorder.
 Qed.
 
-Lemma power_app n m y z L :
- (L^n) y -> (L^m) z -> (L^(n+m)) (y++z).
-Proof.
-    intros. induction n.
-    - simpl. apply power_zero in H. unfold epsilon in H. subst.
-      rewrite app_nil_l. assumption.
-    - firstorder. subst. simpl. unfold cat. 
-      exists x, (x0++z). firstorder.
-      + apply app_assoc_reverse.
-      + induction m.
-        * apply power_zero in H0. rewrite H0. rewrite app_nil_r.
-          rewrite PeanoNat.Nat.add_0_r. assumption.
-        * firstorder.  rewrite PeanoNat.Nat.add_succ_r. simpl.
-          unfold cat. subst. exists (x0++x1) ,x2. firstorder. 
-          -- apply app_assoc.
-          -- 
-Admitted.
-
-
 Lemma star_eqn L : L★ == ε ∪ L · L ★.
 Proof.
   split;intro h; firstorder.
     - induction x0; firstorder.
     - unfold epsilon in H. subst. exists 0. firstorder.
-    - unfold star. exists (1+x2). subst. apply power_app.
-      + simpl. apply cat_eps_r. assumption.
-      + assumption.
+    - unfold star. exists (1+x2). subst. simpl. exists x0,x1. firstorder.
 Qed.
 
 Lemma star_void : ∅ ★ == ε.
@@ -192,33 +171,45 @@ Proof.
     - unfold star. exists 0. firstorder.
 Qed.
 
-Lemma power_cat n m L : L^(n+m) == (L^n) · (L^m).
-Proof.
-  split; intros; firstorder.
-    - induction n. 
-      + unfold cat. exists [],x. firstorder.
-      + simpl. apply cat_assoc.
-        unfold cat. exists x,[]. firstorder.
-        * symmetry. apply app_nil_r.
-        * subst. firstorder.  
-Admitted.
-
-Lemma power_app1 n m y z L :
+Lemma power_app n m y z L :
  (L^n) y -> (L^m) z -> (L^(n+m)) (y++z).
 Proof.
-Admitted.
+     generalize y,z. induction n.
+    - intros. subst. apply power_zero in H. unfold epsilon in H. subst.
+      rewrite app_nil_l. assumption.
+    - intros. destruct H. destruct H. destruct H. destruct H1. simpl.
+     rewrite H. unfold cat.
+      exists x,(x0++z0). firstorder. apply app_assoc_reverse. 
+Qed.
+
+Lemma power_cat n m L : L^(n+m) == (L^n) · (L^m).
+Proof.
+  split. 
+    - generalize x. induction n. 
+      + intros.  simpl in *. apply cat_eps_l. assumption. 
+      + intros. simpl in *. destruct H. destruct H. destruct H. destruct H0.
+        rewrite H. apply cat_assoc. exists x1,x2. firstorder.
+    - intros. unfold cat in H. destruct H. destruct H. destruct H. destruct H0.
+        rewrite H. apply power_app; auto.
+Qed.
+
+
 
 Lemma star_star L : (L★)★ == L★.
 Proof.
-  split; intros; firstorder.
-    - unfold star in *. exists (x0). admit.
-    - unfold star. exists 1. apply cat_eps_r. exists x0. assumption. 
-Admitted.
+  split; intros.
+    - destruct H. revert H. generalize x. induction x0.
+      + intros. simpl in *. exists (0). firstorder.
+      + intros. simpl in *. destruct H. destruct H. destruct H. destruct H0.
+        subst. destruct H0. apply IHx0 in H1. destruct H1.
+         exists (x1+x4). apply power_app; auto.
+    - firstorder. unfold star. exists 1. apply cat_eps_r. exists x0. assumption. 
+Qed.
 
 Lemma cat_star L : (L★)·(L★) == L★.
 Proof.
   split; intros; firstorder.
-    - exists (x3+x2). subst. apply power_app1; firstorder.
+    - exists (x3+x2). subst. apply power_app; firstorder.
     - unfold cat. exists [],x; firstorder. exists 0. firstorder.
 Qed.
 
@@ -265,24 +256,43 @@ Qed.
 Lemma derivative_cat_null L L' a : L [] ->
   derivative (L · L') [a] == (derivative L [a] · L') ∪ derivative L' [a].
 Proof.
-  split; intros; firstorder.
-    - unfold union,derivative, cat. right. rewrite H0.
-      destruct x0.
-      + simpl in *. assumption.
-      + simpl in *. rewrite <- H0. 
-Admitted.
+  split; intros.
+      - firstorder. induction x0.
+        + right. simpl in *. rewrite <- H0 in H2. assumption.
+        + left. simpl in *. unfold cat, derivative. exists x0, x1. firstorder.
+          * inversion H0. reflexivity.
+          * inversion H0. subst. firstorder.
+      - destruct H0.
+        + destruct H0. destruct H0. destruct H0. destruct H1.
+          rewrite H0. exists ([a]++x0), x1. firstorder.
+        + exists [],([a]++x). firstorder. 
+Qed.
 
 Lemma derivative_cat_nonnull L L' a : ~L [] ->
   derivative (L · L') [a] == derivative L [a] · L'.
 Proof.
    intro h. split; intros; firstorder.
     - unfold cat. unfold derivative. exists x0,x1. split.
-      + rewrite <- H. 
+      + rewrite <- H. admit.
+      + split.
+        * admit.
+        * assumption.
+    - unfold derivative, cat. exists [],([a] ++ x). firstorder.
+      + admit.
+      + unfold derivative in H0. subst. 
 Admitted.
+
+(* Lemma power_app n m y z L :
+ (L^n) y -> (L^m) z -> (L^(n+m)) (y++z). *)
 
 Lemma derivative_star L a :
   derivative (L★) [a] == (derivative L [a]) · (L★).
 Proof.
+  split.
+    - intros. unfold derivative, cat. firstorder. exists x,[]. firstorder.
+      + symmetry. apply app_nil_r.
+      + apply power_app with (n:=0) (m:= x0) (y:= []) (z:= [a] ++x) (L:= L)  in H.
+        * simpl in *.
 Admitted.
 
 End Lang.
