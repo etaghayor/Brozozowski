@@ -257,7 +257,7 @@ Lemma derivative_cat_null L L' a : L [] ->
   derivative (L · L') [a] == (derivative L [a] · L') ∪ derivative L' [a].
 Proof.
   split; intros.
-      - firstorder. induction x0.
+      - firstorder. destruct x0.
         + right. simpl in *. rewrite <- H0 in H2. assumption.
         + left. simpl in *. unfold cat, derivative. exists x0, x1. firstorder.
           * inversion H0. reflexivity.
@@ -271,28 +271,29 @@ Qed.
 Lemma derivative_cat_nonnull L L' a : ~L [] ->
   derivative (L · L') [a] == derivative L [a] · L'.
 Proof.
-   intro h. split; intros; firstorder.
-    - unfold cat. unfold derivative. exists x0,x1. split.
-      + rewrite <- H. admit.
-      + split.
-        * admit.
-        * assumption.
-    - unfold derivative, cat. exists [],([a] ++ x). firstorder.
-      + admit.
-      + unfold derivative in H0. subst. 
-Admitted.
-
-(* Lemma power_app n m y z L :
- (L^n) y -> (L^m) z -> (L^(n+m)) (y++z). *)
+   intro h. split; intros.
+    - firstorder. unfold cat. induction x0.
+      + contradiction.
+      + inversion H. subst. exists x0,x1. firstorder.
+    - unfold cat in *. destruct H. destruct H. destruct H. destruct H0.
+      subst. unfold derivative in *. exists ([a]++x0), x1. firstorder.
+Qed.
 
 Lemma derivative_star L a :
   derivative (L★) [a] == (derivative L [a]) · (L★).
 Proof.
   split.
-    - intros. unfold derivative, cat. firstorder. exists x,[]. firstorder.
-      + symmetry. apply app_nil_r.
-      + apply power_app with (n:=0) (m:= x0) (y:= []) (z:= [a] ++x) (L:= L)  in H.
-        * simpl in *.
-Admitted.
+    - intros. unfold cat. destruct H. revert H. generalize x,a. induction x0.
+      + intros. inversion H.
+      + intros. simpl in H. destruct H. destruct H. destruct H. destruct H0.
+        induction x2.
+          * apply IHx0. rewrite app_nil_l in H. subst. auto.
+          * exists x2,x3. firstorder.
+            -- inversion H. reflexivity.
+            -- inversion H. subst. unfold derivative. firstorder.
+    - intros. unfold cat in H. destruct H. destruct H. destruct H. destruct H0.      
+      unfold derivative in *. firstorder. exists (S x2). subst. simpl. unfold cat.
+      exists ([a]++x0), x1. firstorder.
+Qed.
 
 End Lang.
